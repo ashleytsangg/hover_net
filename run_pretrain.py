@@ -12,7 +12,7 @@ from models.hovernet.net_desc import create_model
 from run_train import TrainManager
 from models.hovernet.run_desc import pre_train_step, infer_step
 
-from infer.tile_pretrain import _prepare_patching
+# from infer.tile_pretrain import _prepare_patching
 
 # load pretrained model, Consep seg/classification
 pretrained_path = "./models/pretrained/hovernet_original_consep_type_tf2pytorch.tar"
@@ -20,14 +20,15 @@ net_state_dict = torch.load(pretrained_path)["desc"]
 
 # set params
 nr_types = 5
-n_epochs = 1
+n_epochs = 12
 
 # initialize HoverNet model
 model = create_model(mode="original", input_ch=3, nr_types=5, freeze=False)
 
 # load model state_dict
 model.load_state_dict(net_state_dict, strict=True)
-model = torch.nn.DataParallel(model)                       
+model = torch.nn.DataParallel(model)
+
 # loop through layers and freeze via requires_grad = False
 for param in model.parameters():
     param.requires_grad = False
@@ -56,10 +57,9 @@ run_info = trainer.model_config['phase_list'][0]['run_info']
 for epoch in range(n_epochs):
     print("epoch: ", epoch)
     for batch_idx, batch_data in enumerate(train_dataloader):
-        pre_train_step(batch_data, model, optimizer, nr_types, run_info)
-        break
+        model, _ = pre_train_step(batch_data, model, optimizer, nr_types, run_info)
 
-PATH = './models/pretrained/hovernet_consep_consep_ft.tar'
+PATH = './models/pretrained/hovernet_consep_lymph_ft_12.tar'
 torch.save(model.module.state_dict(), PATH)
 
 # run inference on test data
