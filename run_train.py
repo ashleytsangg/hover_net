@@ -70,6 +70,14 @@ class TrainManager(Config):
         super().__init__()
         return
 
+    #### AT 
+    def get_dataloader(self, mode="train"):
+        self.nr_gpus = 1
+        phase_list = self.model_config["phase_list"][0]
+        target_info = phase_list["target_info"]
+        dataloader = self._get_datagen(2, mode, target_info["gen"])
+        return dataloader
+
     ####
     def view_dataset(self, mode="train"):
         """
@@ -216,7 +224,8 @@ class TrainManager(Config):
 
             # * extremely slow to pass this on DGX with 1 GPU, why (?)
             net_desc = DataParallel(net_desc)
-            net_desc = net_desc.to("cuda")
+            # REMOVING CUDA SUPPORT
+            # net_desc = net_desc.to("cuda")
             # print(net_desc) # * dump network definition or not?
             optimizer, optimizer_args = net_info["optimizer"]
             optimizer = optimizer(net_desc.parameters(), **optimizer_args)
@@ -273,7 +282,8 @@ class TrainManager(Config):
     ####
     def run(self):
         """Define multi-stage run or cross-validation or whatever in here."""
-        self.nr_gpus = torch.cuda.device_count()
+        # REMOVING CUDA SUPPORT
+        # self.nr_gpus = torch.cuda.device_count()
         print('Detect #GPUS: %d' % self.nr_gpus)
 
         phase_list = self.model_config["phase_list"]
