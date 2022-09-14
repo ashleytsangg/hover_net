@@ -147,6 +147,7 @@ def train_step(batch_data, run_info):
         "hv": true_hv,
     }
 
+    ### TODO: somewhere in here -- ignore the 0 class!!!
     if model.module.nr_types is not None:
         true_tp = batch_data["tp_map"]
         true_tp = torch.squeeze(true_tp).to("cuda").type(torch.int64)
