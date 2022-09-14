@@ -52,13 +52,13 @@ def get_config(nr_type, mode):
                         },
                         # path to load, -1 to auto load checkpoint from previous phase,
                         # None to start from scratch
-                        "pretrained": "../pretrained/ImageNet-ResNet50-Preact_pytorch.tar",
+                        "pretrained": "models/pretrained/hovernet_original_consep_type_tf2pytorch.tar",
                         # 'pretrained': None,
                     },
                 },
                 "target_info": {"gen": (gen_targets, {}), "viz": (prep_sample, {})},
                 "batch_size": {"train": 16, "valid": 16,},  # engine name : value
-                "nr_epochs": 50,
+                "nr_epochs": 2,
             },
             {
                 "run_info": {
@@ -91,7 +91,7 @@ def get_config(nr_type, mode):
                 },
                 "target_info": {"gen": (gen_targets, {}), "viz": (prep_sample, {})},
                 "batch_size": {"train": 4, "valid": 8,}, # batch size per gpu
-                "nr_epochs": 50,
+                "nr_epochs": 2,
             },
         ],
         # ------------------------------------------------------------------

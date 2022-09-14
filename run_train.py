@@ -32,6 +32,8 @@ from docopt import docopt
 from tensorboardX import SummaryWriter
 from torch.nn import DataParallel  # TODO: switch to DistributedDataParallel
 from torch.utils.data import DataLoader
+import torch
+import torch.nn as nn
 
 from config import Config
 from dataloader.train_loader import FileLoader
@@ -208,7 +210,8 @@ class TrainManager(Config):
                             k: torch.from_numpy(v) for k, v in net_state_dict.items()
                         }
                     elif chkpt_ext == "tar":  # ! assume same saving format we desire
-                        net_state_dict = torch.load(pretrained_path)["desc"]
+                        # net_state_dict = torch.load(pretrained_path)["desc"]
+                        net_state_dict = torch.load(pretrained_path)
 
                 colored_word = colored(net_name, color="red", attrs=["bold"])
                 print(
@@ -218,6 +221,7 @@ class TrainManager(Config):
                 # load_state_dict returns (missing keys, unexpected keys)
                 net_state_dict = convert_pytorch_checkpoint(net_state_dict)
                 load_feedback = net_desc.load_state_dict(net_state_dict, strict=False)
+
                 # * uncomment for your convenience
                 print("Missing Variables: \n", load_feedback[0])
                 print("Detected Unknown Variables: \n", load_feedback[1])
@@ -226,8 +230,24 @@ class TrainManager(Config):
             net_desc = DataParallel(net_desc)
             # REMOVING CUDA SUPPORT
             net_desc = net_desc.to("cuda")
+            # #### TRANSFER LEARNING CODE ####
+            # for param in net_desc.parameters():
+            #     param.requires_grad = False
+            # ## TODO: change 5 to nr_types
+            # net_desc.module.decoder.tp.u0.conv = nn.Conv2d(64, 5, kernel_size=(1, 1), stride=(1, 1))
+            # net_desc.to('cuda')
+            #
+            # # get parameters to update
+            # params_to_update = []
+            # for name,param in net_desc.named_parameters():
+            #     if param.requires_grad == True:
+            #         params_to_update.append(param)
+            #         print("\t",name)
+
             # print(net_desc) # * dump network definition or not?
+
             optimizer, optimizer_args = net_info["optimizer"]
+            # optimizer = optimizer(params_to_update, **optimizer_args)
             optimizer = optimizer(net_desc.parameters(), **optimizer_args)
             # TODO: expand for external aug for scheduler
             nr_iter = opt["nr_epochs"] * len(loader_dict["train"])

@@ -94,6 +94,34 @@ class __CoNSeP(__AbstractDataset):
 
         return ann
 
+#### AT
+class __Lymph(__AbstractDataset):
+    """Defines the CoNSeP dataset as originally introduced in:
+
+    Graham, Simon, Quoc Dang Vu, Shan E. Ahmed Raza, Ayesha Azam, Yee Wah Tsang, Jin Tae Kwak,
+    and Nasir Rajpoot. "Hover-Net: Simultaneous segmentation and classification of nuclei in
+    multi-tissue histology images." Medical Image Analysis 58 (2019): 101563
+
+    """
+
+    def load_img(self, path):
+        return cv2.cvtColor(cv2.imread(path), cv2.COLOR_BGR2RGB)
+
+    def load_ann(self, path, with_type=False):
+        # assumes that ann is HxW
+        ann_inst = sio.loadmat(path)["inst_map"]
+        if with_type:
+            ann_type = sio.loadmat(path)["type_map"]
+
+            # don't merge!!!
+
+            ann = np.dstack([ann_inst, ann_type])
+            ann = ann.astype("int32")
+        else:
+            ann = np.expand_dims(ann_inst, -1)
+            ann = ann.astype("int32")
+
+        return ann
 
 ####
 def get_dataset(name):
@@ -102,6 +130,7 @@ def get_dataset(name):
         "kumar": lambda: __Kumar(),
         "cpm17": lambda: __CPM17(),
         "consep": lambda: __CoNSeP(),
+        "lymph": lambda: __Lymph(),
     }
     if name.lower() in name_dict:
         return name_dict[name]()

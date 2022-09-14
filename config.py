@@ -36,6 +36,8 @@ class Config(object):
         aug_shape = [540, 540] # patch shape used during augmentation (larger patch may have less border artefacts)
         act_shape = [270, 270] # patch shape used as input to network - central crop performed after augmentation
         out_shape = [80, 80] # patch shape at output of network
+        # act_shape = [256, 256]  # patch shape used as input to network - central crop performed after augmentation
+        # out_shape = [164, 164] # patch shape at output of network
 
         if model_mode == "original":
             if act_shape != [270,270] or out_shape != [80,80]:
@@ -49,10 +51,10 @@ class Config(object):
 
         # paths to training and validation patches
         self.train_dir_list = [
-            "train_patches_path"
+            "dataset/training_data/consep/consep/train/540x540_164x164"
         ]
         self.valid_dir_list = [
-            "valid_patches_path"
+            "dataset/training_data/consep/consep/valid/540x540_164x164"
         ]
 
         self.shape_info = {
