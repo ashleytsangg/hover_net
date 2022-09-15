@@ -112,7 +112,7 @@ def pre_train_step(batch_data, model, optimizer, nr_types, run_info):
 
 
 ####
-def train_step(batch_data, run_info):
+def train_step(batch_data, run_info, sparse_labels=False):
     # TODO: synchronize the attach protocol
     # run_info, state_info = run_info
     loss_func_dict = {
@@ -153,8 +153,9 @@ def train_step(batch_data, run_info):
         true_tp = torch.squeeze(true_tp).to("cuda").type(torch.int64)
         true_tp_onehot = F.one_hot(true_tp, num_classes=model.module.nr_types)
         true_tp_onehot = true_tp_onehot.type(torch.float32)
+        # if sparse_labels is True: # if sparse labels, ignore labels of 0 class
+        #     true_tp_onehot = true_tp_onehot[:, :, :, 1:]
         true_dict["tp"] = true_tp_onehot
-        print('TRUE TP: ', true_tp_onehot)
 
     ####
     model.train()
@@ -166,8 +167,10 @@ def train_step(batch_data, run_info):
     )
     pred_dict["np"] = F.softmax(pred_dict["np"], dim=-1)
     if model.module.nr_types is not None:
-        pred_dict["tp"] = F.softmax(pred_dict["tp"], dim=-1)
-        print('PRED TP: ', pred_dict["tp"])
+        pred_tp_soft = F.softmax(pred_dict["tp"], dim=-1)
+        #     pred_tp_soft = pred_tp_soft[:, :, :, 1:] # ignore pred of 0 class
+        pred_dict["tp"] = pred_tp_soft
+
 
     ####
     loss = 0
@@ -175,9 +178,19 @@ def train_step(batch_data, run_info):
     for branch_name in pred_dict.keys():
         for loss_name, loss_weight in loss_opts[branch_name].items():
             loss_func = loss_func_dict[loss_name]
-            loss_args = [true_dict[branch_name], pred_dict[branch_name]]
-            print(loss_args)
-            assert False
+            # loss_args = [true_dict[branch_name], pred_dict[branch_name]]
+            if branch_name == 'tp' and sparse_labels is True:
+                true_tp = true_dict[branch_name].clone()
+                true_tp[:, :, :, 0] = torch.zeros_like(true_dict[branch_name][:, :, :, 0])
+                # true_dict[branch_name][:, :, :, 0] = torch.zeros_like(true_dict[branch_name][:, :, :, 0].clone())
+                mask = torch.sum(true_dict[branch_name], dim=-1)
+                mask = mask.unsqueeze(3)
+                mask = mask.repeat(1, 1, 1, model.module.nr_types)
+                pred_tp = pred_dict[branch_name].clone()
+                pred_tp = (pred_dict[branch_name] * mask)
+                loss_args = [true_tp, pred_tp]
+            else:
+                loss_args = [true_dict[branch_name], pred_dict[branch_name]]
             if loss_name == "msge":
                 loss_args.append(true_np_onehot[..., 1])
             term_loss = loss_func(*loss_args)
@@ -186,6 +199,8 @@ def train_step(batch_data, run_info):
 
     track_value("overall_loss", loss.cpu().item())
     # * gradient update
+
+    print("overall_loss", loss.cpu().item())
 
     # torch.set_printoptions(precision=10)
     loss.backward()

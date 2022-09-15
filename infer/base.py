@@ -64,6 +64,7 @@ class InferManager(object):
         net = model_creator(**self.method["model_args"])
         # below is for original pretrained models
         # saved_state_dict = torch.load(self.method["model_path"])["desc"]
+        ### AT
         # below is for custom pretrained models
         saved_state_dict = torch.load(self.method["model_path"])
         saved_state_dict = convert_pytorch_checkpoint(saved_state_dict)

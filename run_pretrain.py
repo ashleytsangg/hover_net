@@ -13,24 +13,31 @@ from models.hovernet.net_desc import create_model
 from run_train import TrainManager
 from models.hovernet.run_desc import pre_train_step, train_step
 
-### CHANGE PATH!
-PATH = './models/pretrained/hovernet_consep_consep_testing.tar'
+# 1. change model save path
+model_save_path = './models/pretrained/monusac_lymph_10_fix.tar'
 
-# load pretrained model, Consep seg/classification
-pretrained_path = "./models/pretrained/hovernet_original_consep_type_tf2pytorch.tar"
+# 2. add run info in "config.py" - dataset name, path to training data, nr_types, training data, model mode, etc.
+
+# 3. set params
+nr_types = 6 # number of nuclear types
+n_epochs = 10 # number of epochs
+sparse_labels = True # whether training data is sparsely labeled (ie. lymph = True, consep = False)
+learning_rate = 0.0001
+
+# 4. load pretrained model and params, choose pretrained model with segmentation & classification
+pretrained_path = "./models/pretrained/hovernet_fast_monusac_type_tf2pytorch.tar"
+pretrained_nr_types = 5  # according to pretrainedmodel
+pretrained_mode = "fast" # original or fast
+
 net_state_dict = torch.load(pretrained_path)["desc"]
 
-# set params
-nr_types = 5
-n_epochs = 5
-
-# initialize HoverNet model, nr_types is dependent on pretrained dataset
-model = create_model(mode="original", input_ch=3, nr_types=5, freeze=False)
+# initialize HoverNet model
+# nr_types is dependent on pretrained dataset (ie. consep = 5)
+model = create_model(mode=pretrained_mode, input_ch=3, nr_types=pretrained_nr_types, freeze=True)
 
 # load model state_dict
 model.load_state_dict(net_state_dict, strict=True)
 model = torch.nn.DataParallel(model)
-
 
 # loop through layers and freeze via requires_grad = False
 for param in model.parameters():
@@ -48,6 +55,7 @@ old_model.pop() # remove it since we have a different number of classes
 old_model.append(nn.Conv2d(64, nr_types, kernel_size=(1, 1), stride=(1, 1))) # add the new layer with new classes
 model.module.decoder.tp.u0 = nn.Sequential(*old_model) # append to original model
 
+# replace last nn.Sequential layer
 model.module.nr_types = nr_types
 model.module.decoder.tp.u0 = nn.Sequential(
     OrderedDict([
@@ -55,10 +63,12 @@ model.module.decoder.tp.u0 = nn.Sequential(
         ("relu", nn.ReLU(inplace=True)),
         ("conv", nn.Conv2d(64, nr_types, kernel_size=(1, 1), stride=(1, 1)))
     ])
-
 )
 
-# get parameters to update
+# also replace second to last nn.Sequential layer, conv2d only
+# model.module.decoder.tp.u1.conva = nn.Conv2d(256, 64, kernel_size=(5, 5), stride=(1, 1), bias=False)
+
+# get parameters to update, check only updating the unfrozen layers
 params_to_update = []
 for name, param in model.named_parameters():
     if param.requires_grad:
@@ -66,7 +76,7 @@ for name, param in model.named_parameters():
         print("\t", name)
 
 # set up optimizer on parameters to update
-optimizer = optim.Adam(params_to_update, lr=0.001, betas=(0.9, 0.999))
+optimizer = optim.Adam(params_to_update, lr=learning_rate, betas=(0.9, 0.999))
 
 # run_info from opt.py
 run_info = trainer.model_config['phase_list'][0]['run_info']
@@ -74,15 +84,15 @@ run_info['net']['optimizer'] = optimizer
 model.to("cuda")
 run_info['net']['desc'] = model
 
-# PATH2 = './models/pretrained/hovernet_monusac_lymph_seg_ft_10_recent.tar'
+epoch_save_path = model_save_path[:-4] + '_recent.tar'
 # train last layer on new training data
 for epoch in range(n_epochs):
     print("epoch: ", epoch)
     for batch_idx, batch_data in enumerate(train_dataloader):
-        train_step(batch_data, run_info)
-    # torch.save(model.module.state_dict(), PATH2)
+        train_step(batch_data, run_info, sparse_labels=sparse_labels)
+    # torch.save(model.module.state_dict(), epoch_save_path)
 
-torch.save(model.module.state_dict(), PATH)
+torch.save(model.module.state_dict(), model_save_path)
 
 
 
