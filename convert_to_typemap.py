@@ -1,36 +1,22 @@
-import json
 import os
-import cv2
-import numpy as np
-import matplotlib.pyplot as plt
+import scipy.io as sio
 
 out_dir = 'out/Lymphocyte/pannuke_lymph_50_fix/'
 mat_dir = out_dir + 'mat/'
-json_dir = out_dir + 'json/'
-raw_img_dir = 'dataset/Lymphocyte/Test/Images/'
 
-for fn in os.listdir(json_dir):
-    # read in json file
-    file = os.path.join(json_dir, fn)
-    f = open(file)
-    data = json.load(f)
+for fn in os.listdir(mat_dir):
+    file = os.path.join(mat_dir, fn)
+    matfile = sio.loadmat(file)
+    inst_uid = matfile['inst_uid']
+    inst_map = matfile['inst_map']
+    inst_type = matfile['inst_type']
+    type_map = inst_map
+    for uid in inst_uid:
+        uid = uid[0] # this is the uid number, starting at 1
+        mask = inst_map == uid
+        type_map[mask] = inst_type[uid-1][0] # index inst_type by index, not uid number
+    print('finished file: ', file)
+    save_file = fn[:-5] + '_type_map.mat'
+    sio.savemat(save_file, {'type_map': type_map})
 
-    # get list of contours and type
-    contour_list = []
-    type_list = []
-    nuc_info = data['nuc']
-    for inst in nuc_info:
-        inst_info = nuc_info[inst]
-        inst_contour = inst_info['contour']
-        contour_list.append(inst_contour)
-        inst_type = inst_info['type']
-        type_list.append(inst_type)
-
-    file = os.path.join(raw_img_dir, fn[:-5]) + '.jpg'
-    im = cv2.imread(file)
-    im = np.zeros_like(im)
-    for c in contour_list:
-        print(c)
-        cv2.drawContours(im.astype('uint8'), [np.array(c)], -1, (255, 0, 0), -1)
-    cv2.imwrite('countour.png', im)
-    break
+    
