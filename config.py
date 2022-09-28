@@ -19,25 +19,25 @@ class Config(object):
         self.debug = False
 
         model_name = "hovernet"
-        model_mode = "fast" # choose either `original` or `fast`
+        model_mode = "original" # choose either `original` or `fast`
 
         if model_mode not in ["original", "fast"]:
             raise Exception("Must use either `original` or `fast` as model mode")
 
-        nr_type = 5 # number of nuclear types (including background)
+        nr_type = None # number of nuclear types (including background)
 
         # whether to predict the nuclear type, availability depending on dataset!
-        self.type_classification = True
+        self.type_classification = False
 
         # shape information - 
         # below config is for original mode. 
         # If original model mode is used, use [270,270] and [80,80] for act_shape and out_shape respectively
         # If fast model mode is used, use [256,256] and [164,164] for act_shape and out_shape respectively
         aug_shape = [540, 540] # patch shape used during augmentation (larger patch may have less border artefacts)
-        # act_shape = [270, 270] # patch shape used as input to network - central crop performed after augmentation
-        # out_shape = [80, 80] # patch shape at output of network
-        act_shape = [256, 256]  # patch shape used as input to network - central crop performed after augmentation
-        out_shape = [164, 164] # patch shape at output of network
+        act_shape = [270, 270] # patch shape used as input to network - central crop performed after augmentation
+        out_shape = [80, 80] # patch shape at output of network
+        # act_shape = [256, 256]  # patch shape used as input to network - central crop performed after augmentation
+        # out_shape = [164, 164] # patch shape at output of network
 
         if model_mode == "original":
             if act_shape != [270,270] or out_shape != [80,80]:
@@ -46,15 +46,15 @@ class Config(object):
             if act_shape != [256,256] or out_shape != [164,164]:
                 raise Exception("If using `fast` mode, input shape must be [256,256] and output shape must be [164,164]")
 
-        self.dataset_name = "lymph" # extracts dataset info from dataset.py
+        self.dataset_name = "ycsim" # extracts dataset info from dataset.py
         self.log_dir = "logs/" # where checkpoints will be saved
 
         # paths to training and validation patches
         self.train_dir_list = [
-            "dataset/training_data/lymph/lymph/train/540x540_164x164"
+            r"\\babyserverdw3\PW Cloud Exp Documents\Lab work documenting\W-22-09-02 AT Establish HoverNet Training with freezing weights\dataset\training_data\ycsim\ycsim\train\540x540_164x164"
         ]
         self.valid_dir_list = [
-            "dataset/training_data/lymph/lymph/valid/540x540_164x164"
+            r"\\babyserverdw3\PW Cloud Exp Documents\Lab work documenting\W-22-09-02 AT Establish HoverNet Training with freezing weights\dataset\training_data\monusac_sub\monusac\valid\540x540_164x164"
         ]
 
         self.shape_info = {

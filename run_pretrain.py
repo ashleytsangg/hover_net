@@ -7,6 +7,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 import matplotlib.pyplot as plt
+import os
 from collections import OrderedDict
 
 from models.hovernet.net_desc import create_model
@@ -14,22 +15,25 @@ from run_train import TrainManager
 from models.hovernet.run_desc import pre_train_step, train_step
 
 # 1. change model save path
-model_save_path = './models/pretrained/monusac_lymph_10_fix.tar'
+model_save_name = 'monusac_lymph_25_pannuke.tar'
+model_save_dir = r'\\babyserverdw3\PW Cloud Exp Documents\Lab work documenting\W-22-09-02 AT Establish HoverNet Training with freezing weights\saved_models\freeze_trained\monusac applied to lymph'
+model_save_path =os.path.join(model_save_dir, model_save_name)
 
 # 2. add run info in "config.py" - dataset name, path to training data, nr_types, training data, model mode, etc.
 
 # 3. set params
-nr_types = 6 # number of nuclear types
-n_epochs = 10 # number of epochs
+nr_types = 5 # number of nuclear types
+n_epochs = 25 # number of epochs
 sparse_labels = True # whether training data is sparsely labeled (ie. lymph = True, consep = False)
 learning_rate = 0.0001
 
 # 4. load pretrained model and params, choose pretrained model with segmentation & classification
-pretrained_path = "./models/pretrained/hovernet_fast_monusac_type_tf2pytorch.tar"
+pretrained_path = r"\\babyserverdw3\PW Cloud Exp Documents\Lab work documenting\W-22-09-02 AT Establish HoverNet Training with freezing weights\saved_models\classification\Monusac\monusac_class_train_20.tar"
 pretrained_nr_types = 5  # according to pretrainedmodel
 pretrained_mode = "fast" # original or fast
 
-net_state_dict = torch.load(pretrained_path)["desc"]
+# net_state_dict = torch.load(pretrained_path)["desc"]
+net_state_dict = torch.load(pretrained_path)
 
 # initialize HoverNet model
 # nr_types is dependent on pretrained dataset (ie. consep = 5)
@@ -90,7 +94,7 @@ for epoch in range(n_epochs):
     print("epoch: ", epoch)
     for batch_idx, batch_data in enumerate(train_dataloader):
         train_step(batch_data, run_info, sparse_labels=sparse_labels)
-    # torch.save(model.module.state_dict(), epoch_save_path)
+    torch.save(model.module.state_dict(), epoch_save_path)
 
 torch.save(model.module.state_dict(), model_save_path)
 

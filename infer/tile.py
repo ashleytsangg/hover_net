@@ -41,6 +41,8 @@ from skimage import color
 import convert_format
 from . import base
 
+### AT
+import time
 
 ####
 def _prepare_patching(img, window_size, mask_size, return_src_top_corner=False):
@@ -251,11 +253,16 @@ class InferManager(base.InferManager):
             cache_image_list = []
             cache_patch_info_list = []
             cache_image_info_list = []
+            start_patch = time.time()
             while len(file_path_list) > 0:
                 file_path = file_path_list.pop(0)
-
+                ## AT just for YCSim
+                if file_path.endswith('.db'):
+                    continue
                 img = cv2.imread(file_path)
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                ## testing resizing
+                # img = cv2.resize(img, (img.shape[1]*10, img.shape[0]*10))
                 src_shape = img.shape
 
                 img, patch_info, top_corner = _prepare_patching(
@@ -281,6 +288,9 @@ class InferManager(base.InferManager):
                 # TODO: refactor to explicit protocol
                 cache_image_info_list.append([src_shape, len(patch_info), top_corner])
 
+            end_patch = time.time() - start_patch
+            print("===== patching duration: %.2f =====" % end_patch)
+
             # * apply neural net on cached data
             dataset = SerializeFileList(
                 cache_image_list, cache_patch_info_list, self.patch_input_shape
@@ -302,6 +312,7 @@ class InferManager(base.InferManager):
                 position=0,
             )
 
+            start_eval = time.time()
             accumulated_patch_output = []
             for batch_idx, batch_data in enumerate(dataloader):
                 sample_data_list, sample_info_list = batch_data
@@ -316,7 +327,10 @@ class InferManager(base.InferManager):
                 accumulated_patch_output.extend(sample_output_list)
                 pbar.update()
             pbar.close()
+            end_eval = time.time() - start_eval
+            print("===== evaluation duration: %.2f =====" % end_eval)
 
+            start_assemble = time.time()
             # * parallely assemble the processed cache data for each file if possible
             future_list = []
             for file_idx, file_path in enumerate(use_path_list):
@@ -384,5 +398,7 @@ class InferManager(base.InferManager):
                     else:
                         file_path = proc_callback(future.result())
                         log_info("Done Assembling %s" % file_path)
+            end_assemble = time.time() - start_assemble
+            print("===== assembly duration: %.2f =====" % end_assemble)
         return
 

@@ -28,25 +28,28 @@ if __name__ == "__main__":
 
     # Name of dataset - use Kumar, CPM17 or CoNSeP.
     # This used to get the specific dataset img and ann loading scheme from dataset.py
-    dataset_name = "lymph"
-    save_root = "dataset/training_data/%s/" % dataset_name
+    dataset_name = "ycsim"
+    folder_name = "if"
+    save_root = r"\\babyserverdw3\PW Cloud Exp Documents\Lab work documenting\W-22-09-02 AT Establish HoverNet Training with freezing weights\dataset\training_data\%s" % folder_name
 
     # a dictionary to specify where the dataset path should be
     dataset_info = {
         "train": {
-            # make sure to change jpg/png
-            "img": (".jpg", "dataset/Lymphocyte/Train/Images"),
-            "ann": (".mat", "dataset/Lymphocyte/Train/Labels/"),
+            # make sure to change jpg/png/tif
+            "img": (".tif", r"\\babyserverdw3\PW Cloud Exp Documents\Lab work documenting\W-22-09-02 AT Establish HoverNet Training with freezing weights\dataset\IF\Images"),
+            "ann": (".mat", r"\\babyserverdw3\PW Cloud Exp Documents\Lab work documenting\W-22-09-02 AT Establish HoverNet Training with freezing weights\dataset\IF\Labels"),
         },
         "valid": {
-            "img": (".jpg", "dataset/Lymphocyte/Test/Images"),
-            "ann": (".mat", "dataset/Lymphocyte/Test/Labels/"),
+            # make sure to change jpg/png/tif
+            "img": (".tif", r"\\babyserverdw3\PW Cloud Exp Documents\Lab work documenting\W-22-09-02 AT Establish HoverNet Training with freezing weights\dataset\MoNuSAC\Valid_subset\Images"),
+            "ann": (".mat", r"\\babyserverdw3\PW Cloud Exp Documents\Lab work documenting\W-22-09-02 AT Establish HoverNet Training with freezing weights\dataset\MoNuSAC\Valid_subset/Labels/"),
         },
     }
 
     patterning = lambda x: re.sub("([\[\]])", "[\\1]", x)
     parser = get_dataset(dataset_name)
     xtractor = PatchExtractor(win_size, step_size)
+    # AT ignore valid for now - added break at end of loop
     for split_name, split_desc in dataset_info.items():
         img_ext, img_dir = split_desc["img"]
         ann_ext, ann_dir = split_desc["ann"]
@@ -99,3 +102,4 @@ if __name__ == "__main__":
 
             pbarx.update()
         pbarx.close()
+        break

@@ -96,14 +96,9 @@ class __CoNSeP(__AbstractDataset):
 
 #### AT
 class __Lymph(__AbstractDataset):
-    """Defines the CoNSeP dataset as originally introduced in:
-
-    Graham, Simon, Quoc Dang Vu, Shan E. Ahmed Raza, Ayesha Azam, Yee Wah Tsang, Jin Tae Kwak,
-    and Nasir Rajpoot. "Hover-Net: Simultaneous segmentation and classification of nuclei in
-    multi-tissue histology images." Medical Image Analysis 58 (2019): 101563
+    """Defines lymphocyte dataset
 
     """
-
     def load_img(self, path):
         return cv2.cvtColor(cv2.imread(path), cv2.COLOR_BGR2RGB)
 
@@ -113,7 +108,34 @@ class __Lymph(__AbstractDataset):
         if with_type:
             ann_type = sio.loadmat(path)["type_map"]
 
-            # don't merge!!!
+            # make it consistent labeling with lymphocyte data
+
+            ann = np.dstack([ann_inst, ann_type])
+            ann = ann.astype("int32")
+        else:
+            ann = np.expand_dims(ann_inst, -1)
+            ann = ann.astype("int32")
+
+        return ann
+
+#### AT
+class __Monusac(__AbstractDataset):
+    """Defines lymphocyte dataset
+
+    """
+    def load_img(self, path):
+        return cv2.cvtColor(cv2.imread(path), cv2.COLOR_BGR2RGB)
+
+    def load_ann(self, path, with_type=False):
+        # assumes that ann is HxW
+        ann_inst = sio.loadmat(path)["inst_map"]
+        if with_type:
+            ann_type = sio.loadmat(path)["type_map"]
+
+            # at least 1 and 3 (lymph, neutrophil) are aligned
+            copy_ann_type = np.copy(ann_type)
+            ann_type[(ann_type == 2)] = 1
+            ann_type[(copy_ann_type == 1)] = 2
 
             ann = np.dstack([ann_inst, ann_type])
             ann = ann.astype("int32")
@@ -124,6 +146,24 @@ class __Lymph(__AbstractDataset):
         return ann
 
 ####
+class __YCSim(__AbstractDataset):
+    """YCSim dataset
+
+    """
+
+    def load_img(self, path):
+        return cv2.cvtColor(cv2.imread(path), cv2.COLOR_BGR2RGB)
+
+    def load_ann(self, path, with_type=False):
+        # assert not with_type, "Not support"
+        # assumes that ann is HxW
+        ann_inst = sio.loadmat(path)["inst_map"]
+        ann_inst = ann_inst.astype("int32")
+        ann = np.expand_dims(ann_inst, -1)
+        return ann
+
+
+####
 def get_dataset(name):
     """Return a pre-defined dataset object associated with `name`."""
     name_dict = {
@@ -131,6 +171,8 @@ def get_dataset(name):
         "cpm17": lambda: __CPM17(),
         "consep": lambda: __CoNSeP(),
         "lymph": lambda: __Lymph(),
+        "monusac": lambda: __Monusac(),
+        "ycsim": lambda: __YCSim(),
     }
     if name.lower() in name_dict:
         return name_dict[name]()
