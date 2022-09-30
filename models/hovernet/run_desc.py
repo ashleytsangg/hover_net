@@ -153,8 +153,6 @@ def train_step(batch_data, run_info, sparse_labels=False):
         true_tp = torch.squeeze(true_tp).to("cuda").type(torch.int64)
         true_tp_onehot = F.one_hot(true_tp, num_classes=model.module.nr_types)
         true_tp_onehot = true_tp_onehot.type(torch.float32)
-        # if sparse_labels is True: # if sparse labels, ignore labels of 0 class
-        #     true_tp_onehot = true_tp_onehot[:, :, :, 1:]
         true_dict["tp"] = true_tp_onehot
 
     ####
@@ -181,13 +179,18 @@ def train_step(batch_data, run_info, sparse_labels=False):
             # loss_args = [true_dict[branch_name], pred_dict[branch_name]]
             if branch_name == 'tp' and sparse_labels is True:
                 true_tp = true_dict[branch_name].clone()
+                # replace the 0 layer of ground truth with all zeros
                 true_tp[:, :, :, 0] = torch.zeros_like(true_dict[branch_name][:, :, :, 0])
-                # true_dict[branch_name][:, :, :, 0] = torch.zeros_like(true_dict[branch_name][:, :, :, 0].clone())
-                mask = torch.sum(true_dict[branch_name], dim=-1)
+                # create a mask from ground truth to indicate which pixels i have labels for
+                # eliminate guesses from pred tp which where i have no labels for -> there will only be a difference
+                # in prediction (ie. 1 vs 0 for where this is label for, o/w 0 vs 0)
+                # mask = torch.sum(true_dict[branch_name], dim=-1)
+                mask = torch.sum(true_tp, dim=-1)
+                mask[mask == 0] = 1e-20
                 mask = mask.unsqueeze(3)
                 mask = mask.repeat(1, 1, 1, model.module.nr_types)
-                pred_tp = pred_dict[branch_name].clone()
                 pred_tp = (pred_dict[branch_name] * mask)
+                # true tp has no labels for class 0
                 loss_args = [true_tp, pred_tp]
             else:
                 loss_args = [true_dict[branch_name], pred_dict[branch_name]]
