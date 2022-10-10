@@ -4,7 +4,7 @@ import torch
 import torch.nn.functional as F
 
 from misc.utils import center_pad_to_shape, cropping_center
-from .utils import crop_to_shape, dice_loss, mse_loss, msge_loss, xentropy_loss
+from .utils import crop_to_shape, dice_loss, mse_loss, msge_loss, xentropy_loss, weighted_xentropy_loss
 
 from collections import OrderedDict
 
@@ -112,11 +112,16 @@ def pre_train_step(batch_data, model, optimizer, nr_types, run_info):
 
 
 ####
-def train_step(batch_data, run_info, sparse_labels=False):
+def train_step(batch_data, run_info, sparse_labels=None, weighted=None):
     # TODO: synchronize the attach protocol
     # run_info, state_info = run_info
+    if weighted:
+        bce_loss = weighted_xentropy_loss
+    else:
+        bce_loss = xentropy_loss
     loss_func_dict = {
-        "bce": xentropy_loss,
+        # "bce": xentropy_loss,
+        "bce": bce_loss,
         "dice": dice_loss,
         "mse": mse_loss,
         "msge": msge_loss,
@@ -147,7 +152,6 @@ def train_step(batch_data, run_info, sparse_labels=False):
         "hv": true_hv,
     }
 
-    ### TODO: somewhere in here -- ignore the 0 class!!!
     if model.module.nr_types is not None:
         true_tp = batch_data["tp_map"]
         true_tp = torch.squeeze(true_tp).to("cuda").type(torch.int64)
@@ -197,6 +201,18 @@ def train_step(batch_data, run_info, sparse_labels=False):
             if loss_name == "msge":
                 loss_args.append(true_np_onehot[..., 1])
             term_loss = loss_func(*loss_args)
+
+
+            # weight losses by some metric
+            # if weighted:
+            #     # counts per type
+            #     type_counts = torch.sum(true_dict["tp"], dim=(1, 2))
+            #     # total number of labels for this patch
+            #     tot_labels = torch.sum(type_counts, dim=-1)
+            #     print(tot_labels)
+            #     assert False
+
+
             track_value("loss_%s_%s" % (branch_name, loss_name), term_loss.cpu().item())
             loss += loss_weight * term_loss
 

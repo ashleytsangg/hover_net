@@ -28,16 +28,16 @@ if __name__ == "__main__":
 
     # Name of dataset - use Kumar, CPM17 or CoNSeP.
     # This used to get the specific dataset img and ann loading scheme from dataset.py
-    dataset_name = "ycsim"
-    folder_name = "if"
+    dataset_name = "lymph"
+    folder_name = "lymph_split_0"
     save_root = r"\\babyserverdw3\PW Cloud Exp Documents\Lab work documenting\W-22-09-02 AT Establish HoverNet Training with freezing weights\dataset\training_data\%s" % folder_name
 
     # a dictionary to specify where the dataset path should be
     dataset_info = {
         "train": {
             # make sure to change jpg/png/tif
-            "img": (".tif", r"\\babyserverdw3\PW Cloud Exp Documents\Lab work documenting\W-22-09-02 AT Establish HoverNet Training with freezing weights\dataset\IF\Images"),
-            "ann": (".mat", r"\\babyserverdw3\PW Cloud Exp Documents\Lab work documenting\W-22-09-02 AT Establish HoverNet Training with freezing weights\dataset\IF\Labels"),
+            "img": (".jpg", r"\\babyserverdw3\PW Cloud Exp Documents\Lab work documenting\W-22-09-02 AT Establish HoverNet Training with freezing weights\dataset\Lymphocyte\0921 dataset\Split_0\Images"),
+            "ann": (".mat", r"\\babyserverdw3\PW Cloud Exp Documents\Lab work documenting\W-22-09-02 AT Establish HoverNet Training with freezing weights\dataset\Lymphocyte\0921 dataset\Split_0\Labels"),
         },
         "valid": {
             # make sure to change jpg/png/tif

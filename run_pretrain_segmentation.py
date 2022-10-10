@@ -19,8 +19,8 @@ from run_train import TrainManager
 from models.hovernet.run_desc import pre_train_step, train_step
 
 # 1. change model save path
-model_save_name = 'full_seg_train_10.tar'
-model_save_dir = r'\\babyserverdw3\PW Cloud Exp Documents\Lab work documenting\W-22-09-02 AT Establish HoverNet Training with freezing weights\saved_models\segmentation\YCSim'
+model_save_name = 'full_seg_10_np_hv_B5_unfilt.tar'
+model_save_dir = r'\\babyserverdw3\PW Cloud Exp Documents\Lab work documenting\W-22-09-02 AT Establish HoverNet Training with freezing weights\saved_models\segmentation\IF'
 model_save_path =os.path.join(model_save_dir, model_save_name)
 
 # 2. add run info in "config.py" - dataset name, path to training data, nr_types, training data, model mode, etc.

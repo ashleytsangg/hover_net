@@ -2,7 +2,9 @@ import math
 import numpy as np
 
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
+from sklearn.utils.class_weight import compute_class_weight
 
 from matplotlib import cm
 
@@ -49,6 +51,57 @@ def crop_to_shape(x, y, data_format="NCHW"):
         crop_shape = (x_shape[1] - y_shape[1], x_shape[2] - y_shape[2])
     return crop_op(x, crop_shape, data_format)
 
+
+#### AT
+def weighted_xentropy_loss(true, pred, reduction=None):
+    """Cross entropy loss. Assumes NHWC!
+
+    Args:
+        pred: prediction array
+        true: ground truth array
+
+    Returns:
+        cross entropy loss
+
+    """
+    epsilon = 10e-8
+    # scale preds so that the class probs of each sample sum to 1
+    pred = pred / torch.sum(pred, -1, keepdim=True)
+    # manual computation of crossentropy
+    pred = torch.clamp(pred, epsilon, 1.0 - epsilon)
+
+    # counts per type
+    type_counts = torch.sum(true, dim=(1, 2))
+    # number of labels for this patch
+    n_labels = torch.sum(type_counts, dim=-1)
+    # number of classes / nr_types
+    n_classes = true.shape[-1]
+    # balanced weighting - n_labels / (n_classes * n_labels_for_type)
+    weights = n_labels.unsqueeze(dim=-1) / (n_classes * type_counts)
+    # replace nan/inf wtih 1.0 - no weighting
+    weights[weights.isnan()] = 1.0
+    weights[weights.isinf()] = 1.0
+
+    # weighted_loss = nn.CrossEntropyLoss(weight=weights, reduction='mean')
+    #
+    # loss = weighted_loss(pred, true.long())
+
+
+    # reshape for batch matrix multiplication of weights and true
+    t = true.reshape(true.shape[0], true.shape[1]*true.shape[2], true.shape[3])
+    # normalization term
+    wt = torch.bmm(t, weights.unsqueeze(-1)).sum()
+    if wt == 0.0:
+        wt = 1.0
+
+    # multiply loss by weights
+    # loss = -torch.sum((true * torch.log(pred))), -1, keepdim=True)
+    true_logpred = (true * torch.log(pred)).reshape(true.shape[0], true.shape[1]*true.shape[2], true.shape[3])
+
+    loss = -torch.sum(torch.bmm(true_logpred, weights.unsqueeze(-1)), -1, keepdim=True) / wt
+    loss = loss.mean() if reduction == "mean" else loss.sum()
+
+    return loss
 
 ####
 def xentropy_loss(true, pred, reduction="mean"):

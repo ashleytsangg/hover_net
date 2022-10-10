@@ -13,22 +13,24 @@ import torch.optim as optim
 import matplotlib.pyplot as plt
 import os
 from collections import OrderedDict
+import time
 
 from models.hovernet.net_desc import create_model
 from run_train import TrainManager
 from models.hovernet.run_desc import pre_train_step, train_step
 
 # 1. change model save path
-model_save_name = 'monusac_pannuke_class_train_20.tar'
-model_save_dir = r'\\babyserverdw3\PW Cloud Exp Documents\Lab work documenting\W-22-09-02 AT Establish HoverNet Training with freezing weights\saved_models\classification\Monusac'
+model_save_name = 'pannuke_10_WLM2_CEL.tar'
+model_save_dir = r'\\babyserverdw3\PW Cloud Exp Documents\Lab work documenting\W-22-09-02 AT Establish HoverNet Training with freezing weights\saved_models\0921 lymph models\full branch'
 model_save_path =os.path.join(model_save_dir, model_save_name)
 
 # 2. add run info in "config.py" - dataset name, path to training data, nr_types, training data, model mode, etc.
 
 # 3. set params
-nr_types = 5 # number of nuclear types
-n_epochs = 20 # number of epochs
-sparse_labels = False # whether training data is sparsely labeled (ie. lymph = True, consep = False)
+nr_types = 6 # number of nuclear types
+n_epochs = 10 # number of epochs
+sparse_labels = True # whether training data is sparsely labeled (ie. lymph = True, consep = False)
+weighted = True
 learning_rate = 0.0001
 
 # 4. load pretrained model and params, choose pretrained model with segmentation & classification
@@ -93,13 +95,17 @@ model.to("cuda")
 run_info['net']['desc'] = model
 
 epoch_save_path = model_save_path[:-4] + '_recent.tar'
+tot_start = time.time()
 # train last layer on new training data
 for epoch in range(n_epochs):
-    print("epoch: ", epoch)
+    start = time.time()
     for batch_idx, batch_data in enumerate(train_dataloader):
-        train_step(batch_data, run_info, sparse_labels=sparse_labels)
-    torch.save(model.module.state_dict(), epoch_save_path)
+        print("epoch: ", epoch)
+        train_step(batch_data, run_info, sparse_labels=sparse_labels, weighted=weighted)
+    print('time per epoch = ', time.time() - start)
+    # torch.save(model.module.state_dict(), epoch_save_path)
 
+print('total train time = ', time.time() - tot_start)
 torch.save(model.module.state_dict(), model_save_path)
 
 

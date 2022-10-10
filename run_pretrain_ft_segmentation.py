@@ -19,7 +19,7 @@ from run_train import TrainManager
 from models.hovernet.run_desc import pre_train_step, train_step
 
 # 1. change model save path
-model_save_name = 'ft_seg_10_np_hv.tar'
+model_save_name = 'ft_seg_30_np_G1.tar'
 model_save_dir = r'\\babyserverdw3\PW Cloud Exp Documents\Lab work documenting\W-22-09-02 AT Establish HoverNet Training with freezing weights\saved_models\segmentation\IF'
 model_save_path =os.path.join(model_save_dir, model_save_name)
 
@@ -27,7 +27,7 @@ model_save_path =os.path.join(model_save_dir, model_save_name)
 
 # 3. set params
 nr_types = None # number of nuclear types
-n_epochs = 10 # number of epochs
+n_epochs = 30 # number of epochs
 sparse_labels = False # whether training data is sparsely labeled (ie. lymph = True, consep = False)
 learning_rate = 0.0001
 
