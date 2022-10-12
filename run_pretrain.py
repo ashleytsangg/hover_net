@@ -16,7 +16,7 @@ from run_train import TrainManager
 from models.hovernet.run_desc import pre_train_step, train_step
 
 # 1. change model save path
-model_save_name = 'pannuke_20_WLM2.tar'
+model_save_name = 'pannuke_20_LM1.tar'
 model_save_dir = r'\\babyserverdw3\PW Cloud Exp Documents\Lab work documenting\W-22-09-02 AT Establish HoverNet Training with freezing weights\saved_models\0921 lymph models'
 model_save_path =os.path.join(model_save_dir, model_save_name)
 
@@ -26,7 +26,8 @@ model_save_path =os.path.join(model_save_dir, model_save_name)
 nr_types = 6 # number of nuclear types
 n_epochs = 20 # number of epochs
 sparse_labels = True # whether training data is sparsely labeled (ie. lymph = True, consep = False)
-weighted = True
+loss_method = 1 # LM1 or LM2
+weighted = False
 learning_rate = 0.0001
 
 # 4. load pretrained model and params, choose pretrained model with segmentation & classification
@@ -96,7 +97,7 @@ for epoch in range(n_epochs):
     start = time.time()
     for batch_idx, batch_data in enumerate(train_dataloader):
         print("epoch: ", epoch)
-        train_step(batch_data, run_info, sparse_labels=sparse_labels, weighted=weighted)
+        train_step(batch_data, run_info, sparse_labels=sparse_labels, weighted=weighted, loss_method=loss_method)
     # torch.save(model.module.state_dict(), epoch_save_path)
     print("epoch elapsed time = ", time.time() - start)
 
