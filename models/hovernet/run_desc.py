@@ -112,7 +112,7 @@ def pre_train_step(batch_data, model, optimizer, nr_types, run_info):
 
 
 ####
-def train_step(batch_data, run_info, sparse_labels=None, weighted=None):
+def train_step(batch_data, run_info, sparse_labels=None, weighted=None, loss_method=None):
     # TODO: synchronize the attach protocol
     # run_info, state_info = run_info
     if weighted:
@@ -183,18 +183,22 @@ def train_step(batch_data, run_info, sparse_labels=None, weighted=None):
             # loss_args = [true_dict[branch_name], pred_dict[branch_name]]
             if branch_name == 'tp' and sparse_labels is True:
                 true_tp = true_dict[branch_name].clone()
+                ### LM1 here
                 # replace the 0 layer of ground truth with all zeros
                 true_tp[:, :, :, 0] = torch.zeros_like(true_dict[branch_name][:, :, :, 0])
+                ### LM2 here
                 # create a mask from ground truth to indicate which pixels i have labels for
                 # eliminate guesses from pred tp which where i have no labels for -> there will only be a difference
                 # in prediction (ie. 1 vs 0 for where this is label for, o/w 0 vs 0)
                 # mask = torch.sum(true_dict[branch_name], dim=-1)
-                mask = torch.sum(true_tp, dim=-1)
-                mask[mask == 0] = 1e-20
-                mask = mask.unsqueeze(3)
-                mask = mask.repeat(1, 1, 1, model.module.nr_types)
-                pred_tp = (pred_dict[branch_name] * mask)
+                if loss_method == 2:
+                    mask = torch.sum(true_tp, dim=-1)
+                    mask[mask == 0] = 1e-20
+                    mask = mask.unsqueeze(3)
+                    mask = mask.repeat(1, 1, 1, model.module.nr_types)
+                    pred_dict[branch_name] = (pred_dict[branch_name] * mask)
                 # true tp has no labels for class 0
+                pred_tp = pred_dict[branch_name]
                 loss_args = [true_tp, pred_tp]
             else:
                 loss_args = [true_dict[branch_name], pred_dict[branch_name]]
