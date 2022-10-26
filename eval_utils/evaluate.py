@@ -13,7 +13,7 @@ from sklearn.metrics import confusion_matrix
 import seaborn as sn
 import matplotlib.pyplot as plt
 
-pred_dir = r'\\babyserverdw3\PW Cloud Exp Documents\Lab work documenting\W-22-09-02 AT Establish HoverNet Training with freezing weights\out\Lymphocyte\0921 data\last layer\pannuke_20_WLM2'
+pred_dir = r'\\babyserverdw3\PW Cloud Exp Documents\Lab work documenting\W-22-09-02 AT Establish HoverNet Training with freezing weights\out\Lymphocyte\0921 data\full branch\pannuke_10_WLM00'
 gt_dir = r'\\babyserverdw3\PW Cloud Exp Documents\Lab work documenting\W-22-09-02 AT Establish HoverNet Training with freezing weights\dataset\Lymphocyte\0921 dataset\All\Raw Labels'
 
 nr_types = 6

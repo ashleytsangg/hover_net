@@ -162,6 +162,28 @@ class __YCSim(__AbstractDataset):
         ann = np.expand_dims(ann_inst, -1)
         return ann
 
+#### AT
+class __LymphCustom(__AbstractDataset):
+    """Defines lymphocyte dataset
+    - read type map from npy file
+    - no ann for inst map
+
+    """
+    def load_img(self, path):
+        return cv2.cvtColor(cv2.imread(path), cv2.COLOR_BGR2RGB)
+
+    def load_ann(self, path, with_type=False):
+        with_type=True
+        # assumes that ann is HxW
+        if with_type:
+            with open(path, 'rb') as type_map:
+                ann_type = np.load(type_map)
+        # just put place holder of -1 for inst map
+        ann_inst = np.ones_like(ann_type) * -1
+        ann = np.dstack([ann_inst, ann_type])
+        ann = ann.astype("int32")
+
+        return ann
 
 ####
 def get_dataset(name):
@@ -173,6 +195,7 @@ def get_dataset(name):
         "lymph": lambda: __Lymph(),
         "monusac": lambda: __Monusac(),
         "ycsim": lambda: __YCSim(),
+        "lymph_custom": lambda: __LymphCustom(),
     }
     if name.lower() in name_dict:
         return name_dict[name]()

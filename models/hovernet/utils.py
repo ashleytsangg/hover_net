@@ -79,8 +79,11 @@ def weighted_xentropy_loss(true, pred, reduction=None):
     # balanced weighting - n_labels / (n_classes * n_labels_for_type)
     weights = n_labels.unsqueeze(dim=-1) / (n_classes * type_counts)
     # replace nan/inf wtih 1.0 - no weighting
-    weights[weights.isnan()] = 1.0
-    weights[weights.isinf()] = 1.0
+    # weights[weights.isnan()] = 1.0
+    # weights[weights.isinf()] = 1.0
+    # replace nan/inf wtih 0.0 - if no labels, then no weight
+    weights[weights.isnan()] = 0.0
+    weights[weights.isinf()] = 0.0
 
     # weighted_loss = nn.CrossEntropyLoss(weight=weights, reduction='mean')
     #

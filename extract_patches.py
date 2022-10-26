@@ -10,6 +10,7 @@ import tqdm
 import pathlib
 
 import numpy as np
+import cv2
 
 from misc.patch_extractor import PatchExtractor
 from misc.utils import rm_n_mkdir
@@ -28,16 +29,16 @@ if __name__ == "__main__":
 
     # Name of dataset - use Kumar, CPM17 or CoNSeP.
     # This used to get the specific dataset img and ann loading scheme from dataset.py
-    dataset_name = "lymph"
-    folder_name = "lymph_split_0"
-    save_root = r"\\babyserverdw3\PW Cloud Exp Documents\Lab work documenting\W-22-09-02 AT Establish HoverNet Training with freezing weights\dataset\training_data\%s" % folder_name
+    dataset_name = "lymph_custom"
+    folder_name = "lymph_custom"
+    save_root = r"\\babyserverdw3\PW Cloud Exp Documents\Lab work documenting\W-22-09-10 AT Build Competent multi task DL model for tissue labeling\multi-segmodels\data\training_data\%s" % folder_name
 
     # a dictionary to specify where the dataset path should be
     dataset_info = {
         "train": {
             # make sure to change jpg/png/tif
             "img": (".jpg", r"\\babyserverdw3\PW Cloud Exp Documents\Lab work documenting\W-22-09-02 AT Establish HoverNet Training with freezing weights\dataset\Lymphocyte\0921 dataset\Split_0\Images"),
-            "ann": (".mat", r"\\babyserverdw3\PW Cloud Exp Documents\Lab work documenting\W-22-09-02 AT Establish HoverNet Training with freezing weights\dataset\Lymphocyte\0921 dataset\Split_0\Labels"),
+            "ann": (".npy", r"\\babyserverdw3\PW Cloud Exp Documents\Lab work documenting\W-22-09-10 AT Build Competent multi task DL model for tissue labeling\multi-segmodels\data\train\labels"),
         },
         "valid": {
             # make sure to change jpg/png/tif
@@ -63,7 +64,8 @@ if __name__ == "__main__":
             step_size[0],
             step_size[1],
         )
-        file_list = glob.glob(patterning("%s/*%s" % (ann_dir, ann_ext)))
+        # file_list = glob.glob(patterning("%s/*%s" % (ann_dir, ann_ext)))
+        file_list = glob.glob(patterning("%s/*%s" % (img_dir, img_ext)))
         file_list.sort()  # ensure same ordering across platform
 
         rm_n_mkdir(out_dir)
@@ -74,6 +76,7 @@ if __name__ == "__main__":
         )
 
         for file_idx, file_path in enumerate(file_list):
+            print(file_path)
             base_name = pathlib.Path(file_path).stem
 
             img = parser.load_img("%s/%s%s" % (img_dir, base_name, img_ext))

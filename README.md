@@ -22,6 +22,7 @@ Links to the checkpoints can be found in the inference description below.
 conda env create -f environment.yml
 conda activate hovernet
 pip install torch==1.6.0 torchvision==0.7.0
+conda install pytorch==1.7.0 torchvision==0.8.0 torchaudio==0.7.0 cudatoolkit=11.0 -c pytorch #for RTX 30 series env
 ```
 
 Above, we install PyTorch version 1.6 with CUDA 10.2. 

@@ -16,19 +16,23 @@ from run_train import TrainManager
 from models.hovernet.run_desc import pre_train_step, train_step
 
 # 1. change model save path
-model_save_name = 'pannuke_20_LM1.tar'
-model_save_dir = r'\\babyserverdw3\PW Cloud Exp Documents\Lab work documenting\W-22-09-02 AT Establish HoverNet Training with freezing weights\saved_models\0921 lymph models'
+model_save_name = 'pannuke_10_WLM00.tar'
+model_save_dir = r'\\babyserverdw3\PW Cloud Exp Documents\Lab work documenting\W-22-09-02 AT Establish HoverNet Training with freezing weights\saved_models\0921 lymph models\full branch'
+if not os.path.exists(model_save_dir):
+    os.mkdir(model_save_dir)
 model_save_path =os.path.join(model_save_dir, model_save_name)
 
 # 2. add run info in "config.py" - dataset name, path to training data, nr_types, training data, model mode, etc.
 
 # 3. set params
-nr_types = 6 # number of nuclear types
-n_epochs = 20 # number of epochs
-sparse_labels = True # whether training data is sparsely labeled (ie. lymph = True, consep = False)
+classification = 'full' # 'full' or 'last'
+n_epochs = 10 # number of epochs
 loss_method = 1 # LM1 or LM2
-weighted = False
-learning_rate = 0.0001
+weighted = True
+learning_rate = 1e-4
+
+nr_types = 6 # number of nuclear types
+sparse_labels = True # whether training data is sparsely labeled (ie. lymph = True, consep = False)
 
 # 4. load pretrained model and params, choose pretrained model with segmentation & classification
 pretrained_path = r'\\babyserverdw3\PW Cloud Exp Documents\Lab work documenting\W-22-09-02 AT Establish HoverNet Training with freezing weights\saved_models\full_pretrained\hovernet_fast_pannuke_type_tf2pytorch.tar'
@@ -54,26 +58,41 @@ for param in model.parameters():
 trainer = TrainManager()
 train_dataloader = trainer.get_dataloader()
 
-# unfreeze last conv2d 1x1 layer of tp (nuclear classification) branch for training
-# model.module.decoder.tp.u0.conv = nn.Conv2d(64, nr_types, kernel_size=(1,1), stride=(1,1))
+if classification == 'last':
+    old_model = list(model.module.decoder.tp.u0.children()) # get the last Conv2d layer
+    old_model.pop() # remove it since we have a different number of classes
+    old_model.append(nn.Conv2d(64, nr_types, kernel_size=(1, 1), stride=(1, 1))) # add the new layer with new classes
+    model.module.decoder.tp.u0 = nn.Sequential(*old_model) # append to original model
 
-old_model = list(model.module.decoder.tp.u0.children()) # get the last Conv2d layer
-old_model.pop() # remove it since we have a different number of classes
-old_model.append(nn.Conv2d(64, nr_types, kernel_size=(1, 1), stride=(1, 1))) # add the new layer with new classes
-model.module.decoder.tp.u0 = nn.Sequential(*old_model) # append to original model
+    # replace last nn.Sequential layer
+    model.module.nr_types = nr_types
+    model.module.decoder.tp.u0 = nn.Sequential(
+        OrderedDict([
+            ("bn", nn.BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)),
+            ("relu", nn.ReLU(inplace=True)),
+            ("conv", nn.Conv2d(64, nr_types, kernel_size=(1, 1), stride=(1, 1)))
+        ])
+    )
 
-# replace last nn.Sequential layer
-model.module.nr_types = nr_types
-model.module.decoder.tp.u0 = nn.Sequential(
-    OrderedDict([
-        ("bn", nn.BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)),
-        ("relu", nn.ReLU(inplace=True)),
-        ("conv", nn.Conv2d(64, nr_types, kernel_size=(1, 1), stride=(1, 1)))
-    ])
-)
+if classification == 'full':
+    tp_branch = model.module.decoder.tp
+    for param in tp_branch.parameters():
+        param.requires_grad = True
 
-# also replace second to last nn.Sequential layer, conv2d only
-# model.module.decoder.tp.u1.conva = nn.Conv2d(256, 64, kernel_size=(5, 5), stride=(1, 1), bias=False)
+    old_model = list(model.module.decoder.tp.u0.children())  # get the last Conv2d layer
+    old_model.pop()  # remove it since we have a different number of classes
+    old_model.append(nn.Conv2d(64, nr_types, kernel_size=(1, 1), stride=(1, 1)))  # add the new layer with new classes
+    model.module.decoder.tp.u0 = nn.Sequential(*old_model)  # append to original model
+
+    # ensure correct num classes
+    model.module.nr_types = nr_types
+    model.module.decoder.tp.u0 = nn.Sequential(
+        OrderedDict([
+            ("bn", nn.BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)),
+            ("relu", nn.ReLU(inplace=True)),
+            ("conv", nn.Conv2d(64, nr_types, kernel_size=(1, 1), stride=(1, 1)))
+        ])
+    )
 
 # get parameters to update, check only updating the unfrozen layers
 params_to_update = []
@@ -92,16 +111,23 @@ model.to("cuda")
 run_info['net']['desc'] = model
 
 epoch_save_path = model_save_path[:-4] + '_recent.tar'
+losses = []
 # train last layer on new training data
+tot_start = time.time()
 for epoch in range(n_epochs):
+    epoch_loss = 0.0
     start = time.time()
     for batch_idx, batch_data in enumerate(train_dataloader):
-        print("epoch: ", epoch)
-        train_step(batch_data, run_info, sparse_labels=sparse_labels, weighted=weighted, loss_method=loss_method)
+        loss = train_step(batch_data, run_info, sparse_labels=sparse_labels, weighted=weighted, loss_method=loss_method)
+        epoch_loss += loss
+    print('============ epoch {}, loss: {} ================'.format(epoch, epoch_loss))
+    losses.append(epoch_loss)
     # torch.save(model.module.state_dict(), epoch_save_path)
     print("epoch elapsed time = ", time.time() - start)
 
 torch.save(model.module.state_dict(), model_save_path)
+print("total elapsed time = ", time.time() - tot_start)
+print('model path: ', model_save_path)
 
 
 

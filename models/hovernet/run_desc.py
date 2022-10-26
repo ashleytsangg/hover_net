@@ -127,8 +127,8 @@ def train_step(batch_data, run_info, sparse_labels=None, weighted=None, loss_met
         "msge": msge_loss,
     }
     # use 'ema' to add for EMA calculation, must be scalar!
-    result_dict = {"EMA": {}}
-    track_value = lambda name, value: result_dict["EMA"].update({name: value})
+    # result_dict = {"EMA": {}}
+    # track_value = lambda name, value: result_dict["EMA"].update({name: value})
 
     ####
     model = run_info["net"]["desc"]
@@ -207,23 +207,13 @@ def train_step(batch_data, run_info, sparse_labels=None, weighted=None, loss_met
             term_loss = loss_func(*loss_args)
 
 
-            # weight losses by some metric
-            # if weighted:
-            #     # counts per type
-            #     type_counts = torch.sum(true_dict["tp"], dim=(1, 2))
-            #     # total number of labels for this patch
-            #     tot_labels = torch.sum(type_counts, dim=-1)
-            #     print(tot_labels)
-            #     assert False
-
-
-            track_value("loss_%s_%s" % (branch_name, loss_name), term_loss.cpu().item())
+            # track_value("loss_%s_%s" % (branch_name, loss_name), term_loss.cpu().item())
             loss += loss_weight * term_loss
 
-    track_value("overall_loss", loss.cpu().item())
+    # track_value("overall_loss", loss.cpu().item())
     # * gradient update
 
-    print("overall_loss", loss.cpu().item())
+    # print("loss", loss.cpu().item())
 
     # torch.set_printoptions(precision=10)
     loss.backward()
@@ -231,29 +221,29 @@ def train_step(batch_data, run_info, sparse_labels=None, weighted=None, loss_met
     ####
 
     # pick 2 random sample from the batch for visualization
-    sample_indices = torch.randint(0, true_np.shape[0], (2,))
-
-    imgs = (imgs[sample_indices]).byte()  # to uint8
-    imgs = imgs.permute(0, 2, 3, 1).contiguous().cpu().numpy()
-
-    pred_dict["np"] = pred_dict["np"][..., 1]  # return pos only
-    pred_dict = {
-        k: v[sample_indices].detach().cpu().numpy() for k, v in pred_dict.items()
-    }
-
-    true_dict["np"] = true_np
-    true_dict = {
-        k: v[sample_indices].detach().cpu().numpy() for k, v in true_dict.items()
-    }
-
-    # * Its up to user to define the protocol to process the raw output per step!
-    result_dict["raw"] = {  # protocol for contents exchange within `raw`
-        "img": imgs,
-        "np": (true_dict["np"], pred_dict["np"]),
-        "hv": (true_dict["hv"], pred_dict["hv"]),
-    }
-    return result_dict
-
+    # sample_indices = torch.randint(0, true_np.shape[0], (2,))
+    #
+    # imgs = (imgs[sample_indices]).byte()  # to uint8
+    # imgs = imgs.permute(0, 2, 3, 1).contiguous().cpu().numpy()
+    #
+    # pred_dict["np"] = pred_dict["np"][..., 1]  # return pos only
+    # pred_dict = {
+    #     k: v[sample_indices].detach().cpu().numpy() for k, v in pred_dict.items()
+    # }
+    #
+    # true_dict["np"] = true_np
+    # true_dict = {
+    #     k: v[sample_indices].detach().cpu().numpy() for k, v in true_dict.items()
+    # }
+    #
+    # # * Its up to user to define the protocol to process the raw output per step!
+    # result_dict["raw"] = {  # protocol for contents exchange within `raw`
+    #     "img": imgs,
+    #     "np": (true_dict["np"], pred_dict["np"]),
+    #     "hv": (true_dict["hv"], pred_dict["hv"]),
+    # }
+    # return result_dict, loss
+    return loss
 
 ####
 def valid_step(batch_data, run_info):
